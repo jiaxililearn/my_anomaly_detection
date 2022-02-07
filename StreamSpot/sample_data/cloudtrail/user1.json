@@ -1,0 +1,41 @@
+{
+    "eventVersion": "1.08",
+    "userIdentity": {
+        "type": "AssumedRole",
+        "principalId": "AROAY3QNM7GIH4MEYHZHF:jiaxi.li@vodafone.com.au",
+        "arn": "arn:aws:sts::608839727504:assumed-role/Dev-Mlops-KL/jiaxi.li@vodafone.com.au",
+        "accountId": "608839727504",
+        "accessKeyId": "ASIAY3QNM7GIATIURUSU",
+        "sessionContext": {
+            "sessionIssuer": {
+                "type": "Role",
+                "principalId": "AROAY3QNM7GIH4MEYHZHF",
+                "arn": "arn:aws:iam::608839727504:role/Dev-Mlops-KL",
+                "accountId": "608839727504",
+                "userName": "Dev-Mlops-KL"
+            },
+            "attributes": {
+                "creationDate": "2022-01-14T06:23:25Z",
+                "mfaAuthenticated": "false"
+            }
+        }
+    },
+    "eventTime": "2022-01-14T07:36:43Z",
+    "eventSource": "glue.amazonaws.com",
+    "eventName": "GetJobRuns",
+    "awsRegion": "ap-southeast-2",
+    "sourceIPAddress": "163.116.192.119",
+    "userAgent": "console.amazonaws.com",
+    "requestParameters": {
+        "jobName": "kl-dev-bi-analy-footfall-preprocess"
+    },
+    "responseElements": null,
+    "requestID": "63c97b85-bb82-4862-921b-90c1cada3ec5",
+    "eventID": "f9da85cb-568d-41fa-a19f-8f158a03fe80",
+    "readOnly": true,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "recipientAccountId": "608839727504",
+    "eventCategory": "Management",
+    "sessionCredentialFromConsole": "true"
+}

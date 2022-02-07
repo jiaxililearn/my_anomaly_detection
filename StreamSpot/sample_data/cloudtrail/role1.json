@@ -1,0 +1,52 @@
+{
+    "eventVersion": "1.08",
+    "userIdentity": {
+        "type": "AssumedRole",
+        "principalId": "AROAY3QNM7GIOAMMTXN32:GlueJobRunnerSession",
+        "arn": "arn:aws:sts::608839727504:assumed-role/kl-dev-bi-analy-footfall-glue-extract-role/GlueJobRunnerSession",
+        "accountId": "608839727504",
+        "accessKeyId": "ASIAIQKDDTLCBMPQQRKA",
+        "sessionContext": {
+            "sessionIssuer": {
+                "type": "Role",
+                "principalId": "AROAY3QNM7GIOAMMTXN32",
+                "arn": "arn:aws:iam::608839727504:role/kl-dev-bi-analy-footfall-glue-extract-role",
+                "accountId": "608839727504",
+                "userName": "kl-dev-bi-analy-footfall-glue-extract-role"
+            },
+            "webIdFederationData": {},
+            "attributes": {
+                "creationDate": "2022-01-14T07:01:23Z",
+                "mfaAuthenticated": "false"
+            }
+        },
+        "invokedBy": "glue.amazonaws.com"
+    },
+    "eventTime": "2022-01-14T07:29:19Z",
+    "eventSource": "kms.amazonaws.com",
+    "eventName": "Decrypt",
+    "awsRegion": "ap-southeast-2",
+    "sourceIPAddress": "glue.amazonaws.com",
+    "userAgent": "glue.amazonaws.com",
+    "requestParameters": {
+        "encryptionAlgorithm": "SYMMETRIC_DEFAULT",
+        "encryptionContext": {
+            "aws:s3:arn": "arn:aws:s3:::kl-dev-tpgt-knowledge-lake-sandpit"
+        }
+    },
+    "responseElements": null,
+    "requestID": "13e351e0-0610-4d92-98ae-4992d61d303b",
+    "eventID": "eb4dc09e-ff98-455d-8b23-f19d6d6a7a98",
+    "readOnly": true,
+    "resources": [
+        {
+            "accountId": "608839727504",
+            "type": "AWS::KMS::Key",
+            "ARN": "arn:aws:kms:ap-southeast-2:608839727504:key/df5108cd-f49b-4477-8792-207a6c339033"
+        }
+    ],
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "recipientAccountId": "608839727504",
+    "eventCategory": "Management"
+}

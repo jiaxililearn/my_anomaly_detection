@@ -1,0 +1,64 @@
+{
+    "eventVersion": "1.08",
+    "userIdentity": {
+        "type": "AssumedRole",
+        "principalId": "AROAY3QNM7GIH4MEYHZHF:jiaxi.li@vodafone.com.au",
+        "arn": "arn:aws:sts::608839727504:assumed-role/Dev-Mlops-KL/jiaxi.li@vodafone.com.au",
+        "accountId": "608839727504",
+        "accessKeyId": "ASIAY3QNM7GIHOTVZCBW",
+        "sessionContext": {
+            "sessionIssuer": {
+                "type": "Role",
+                "principalId": "AROAY3QNM7GIH4MEYHZHF",
+                "arn": "arn:aws:iam::608839727504:role/Dev-Mlops-KL",
+                "accountId": "608839727504",
+                "userName": "Dev-Mlops-KL"
+            },
+            "attributes": {
+                "creationDate": "2022-01-14T02:23:04Z",
+                "mfaAuthenticated": "false"
+            }
+        }
+    },
+    "eventTime": "2022-01-14T06:17:23Z",
+    "eventSource": "glue.amazonaws.com",
+    "eventName": "StartJobRun",
+    "awsRegion": "ap-southeast-2",
+    "sourceIPAddress": "163.116.192.120",
+    "userAgent": "console.amazonaws.com",
+    "requestParameters": {
+        "jobName": "kl-dev-bi-analy-footfall-preprocess",
+        "arguments": {
+            "--eds": "default",
+            "--enable-glue-datacatalog": "",
+            "--job-bookmark-option": "job-bookmark-disable",
+            "--output_env": "default",
+            "--tokenisation": "default",
+            "--verbose": "1",
+            "--run_date": "2021-12-16",
+            "--bucket": "kl-dev-tpgt-knowledge-lake-sandpit",
+            "--data_source": "s3",
+            "--enable-spark-ui": "true",
+            "--extra-py-files": "s3://kl-dev-bi-analy-act-footfall/scripts/kl-dev/data_processing/utils.py,s3://kl-dev-bi-analy-act-footfall/scripts/kl-dev/data_processing/preprocessing.py",
+            "--spark-event-logs-path": "s3://kl-dev-tpgt-knowledge-lake-sandpit/logs/glue/footfall_act/",
+            "--additional-python-modules": "JayDeBeApi,sqlparse,pytz,jinja2,python-dateutil",
+            "--enable-continuous-cloudwatch-log": "true",
+            "--partition_keys": "none",
+            "--env": "kl-dev"
+        },
+        "allocatedCapacity": 0,
+        "workerType": "G.1X",
+        "numberOfWorkers": 3
+    },
+    "responseElements": {
+        "jobRunId": "jr_e564336e12b2bff8857529b75765a964024bf5f10fdff2e0e8848e37abbed4c1"
+    },
+    "requestID": "0f3ade3a-7183-4ea7-a781-87ee5794193b",
+    "eventID": "f73c9392-e895-4e2e-985d-cf67f1a77dbe",
+    "readOnly": false,
+    "eventType": "AwsApiCall",
+    "managementEvent": true,
+    "recipientAccountId": "608839727504",
+    "eventCategory": "Management",
+    "sessionCredentialFromConsole": "true"
+}
