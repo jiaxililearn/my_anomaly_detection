@@ -1,1 +1,4 @@
 **/.DS_Store
+baseline/*
+data/event_history*
+**/.ipynb_checkpoints
