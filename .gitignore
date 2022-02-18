@@ -1,4 +1,6 @@
 **/.DS_Store
-
+baseline/**/*.o
+baseline/sbustreamspot-core/streamspot
+baseline/sbustreamspot-data/all.tsv
 data/event_history*
 **/.ipynb_checkpoints
