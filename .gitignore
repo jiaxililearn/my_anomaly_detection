@@ -2,5 +2,10 @@
 baseline/**/*.o
 baseline/sbustreamspot-core/streamspot
 baseline/sbustreamspot-data/all.tsv
-data/event_history*
+data/*
 **/.ipynb_checkpoints
+streamspot_docker_export.tar.gz
+notebooks/*.json
+notebooks/*.log
+notebooks/stats.ipynb
+src/streamspot/log.txt

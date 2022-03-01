@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2016 Emaad Ahmed Manzoor
  * License: Apache License, Version 2.0
  * http://www3.cs.stonybrook.edu/~emanzoor/streamspot/
@@ -28,9 +28,9 @@ namespace std {
 #define F_GID             5           // graph id (tag)
 
 // data structures
-typedef tuple<uint32_t,char,uint32_t,char,char,uint32_t> edge;
-typedef unordered_map<pair<uint32_t,char>,
-                      vector<tuple<uint32_t,char,char>>> graph;
+typedef tuple<uint32_t,string,uint32_t,string,string,uint32_t> edge;
+typedef unordered_map<pair<uint32_t,string>,
+                      vector<tuple<uint32_t,string,string>>> graph;
 typedef vector<uint32_t> shingle_vector;
 
 void update_graphs(edge& e, vector<graph>& graphs);

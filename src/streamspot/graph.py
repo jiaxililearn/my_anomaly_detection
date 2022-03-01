@@ -79,7 +79,7 @@ def update_streamhash_sketches(e, graphs, streamhash_sketches, streamhash_projec
             length -= len(src_type)
 
         if length == 1:
-            last_chunk = " " + last_chunk
+            last_chunk = "" + last_chunk
             length -= 1
 
     sec_last_chunk = ""
@@ -104,7 +104,7 @@ def update_streamhash_sketches(e, graphs, streamhash_sketches, streamhash_projec
             if length > 1 and length <= 3:
                 sec_last_chunk = src_type + sec_last_chunk
             if length == 1:
-                sec_last_chunk = " " + sec_last_chunk
+                sec_last_chunk = "" + sec_last_chunk
 
     # if DEBUG check last chunk if correct
     if logging.getLogger().level == 10:
@@ -117,8 +117,11 @@ def update_streamhash_sketches(e, graphs, streamhash_sketches, streamhash_projec
         logging.debug(f"Shingle: {shingle}")
         chunks = get_string_chunk(shingle, chunk_length)
         logging.debug(f"Last chunk: {last_chunk}")
-        # logging.debug(f" chunk: {chunks[-1]}")
-        assert last_chunk == chunks[-1]
+        try:
+            assert last_chunk == chunks[-1]
+        except Exception as e:
+            logging.debug(f" chunk: {chunks[-1]}")
+            raise Exception(e)
 
         if len(chunks) > 1:
             logging.debug(f"Second last chunk: {sec_last_chunk}")

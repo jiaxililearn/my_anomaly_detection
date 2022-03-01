@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2016 Emaad Ahmed Manzoor
  * License: Apache License, Version 2.0
  * http://www3.cs.stonybrook.edu/~emanzoor/streamspot/
@@ -30,10 +30,20 @@ void update_graphs(edge& e, vector<graph>& graphs) {
   auto& gid = get<F_GID>(e);
 
   // append edge to the edge list for the source
-  graphs[gid][make_pair(src_id,
-                        src_type)].push_back(make_tuple(dst_id,
-                                                        dst_type,
-                                                        e_type));
+  vector<tuple<uint32_t,string,string>>::iterator it;
+  it = find(
+    graphs[gid][make_pair(src_id,src_type)].begin(),
+    graphs[gid][make_pair(src_id,src_type)].end(),
+    make_tuple(dst_id,dst_type,e_type)
+  );
+
+  if (it == graphs[gid][make_pair(src_id,src_type)].end()){
+    graphs[gid][make_pair(src_id,
+                          src_type)].push_back(make_tuple(dst_id,
+                                                          dst_type,
+                                                          e_type));
+  }
+
 }
 
 void remove_from_graph(edge& e, vector<graph>& graphs) {
@@ -81,16 +91,20 @@ unordered_map<string,uint32_t>
   construct_temp_shingle_vector(const graph& g, uint32_t chunk_length) {
   unordered_map<string,uint32_t> temp_shingle_vector;
   for (auto& kv : g) {
-#ifdef VERBOSE
+#ifdef DEBUG
       cout << "OkBFT from " << kv.first.first << " " << kv.first.second;
       cout << " (K = " << K << ")";
       cout << " fanout = " << kv.second.size() << endl;
 #endif
     string shingle; // shingle from this source node
-    queue<tuple<uint32_t,char,char>> q; // (nodeid, nodetype, edgetype)
+    queue<tuple<uint32_t,string,string>> q; // (nodeid, nodetype, edgetype)
+    // q = (queue<tuple<uint32_t,string,string>> *) malloc(100 * sizeof(tuple<uint32_t,string,string>));
     unordered_map<uint32_t,uint32_t> d;
+    cout << "+++ Reset q and d" << endl;
 
-    q.push(make_tuple(kv.first.first, kv.first.second, ' '));
+    cout << "+push to q: " << kv.first.first << " " << kv.first.second << endl;
+
+    q.push(make_tuple(kv.first.first, kv.first.second, " "));
     d[kv.first.first] = 0;
 
     while (!q.empty()) {
@@ -99,19 +113,25 @@ unordered_map<string,uint32_t>
       auto& utype = get<1>(node);
       auto& etype = get<2>(node);
       q.pop();
+      cout << "-pop q: " << uid <<  " " << utype << " " << etype << endl;
+      // TODO: Get rid of the same edges all the time
 
       // use destination and edge types to construct shingle
       shingle += etype;
       shingle += utype;
+      cout << "shingle: " << shingle << endl;
 
       if (d[uid] == K) { // node is K hops away from src_id
         continue;        // don't follow its edges
       }
 
+      cout << "pair: " << uid << " " << utype << endl;
       // outgoing edges are already sorted by timestamp
       for (auto& e : g.at(make_pair(uid, utype))) {
         auto& vid = get<0>(e);
         d[vid] = d[uid] + 1;
+
+        cout << "+a push to q: " << get<0>(e) << " " << get<1>(e) << " " << get<2>(e) << endl;
         q.push(e);
       }
     }
@@ -121,6 +141,7 @@ unordered_map<string,uint32_t>
       temp_shingle_vector[chunk]++;
     }
   }
+  cout << "+++ Exit" << endl;
 
 #ifdef DEBUG
   cout << "Shingles in graph:" << endl;
@@ -151,10 +172,10 @@ void construct_shingle_vectors(vector<shingle_vector>& shingle_vectors,
 #endif
 
       string shingle; // shingle from this source node
-      queue<tuple<uint32_t,char,char>> q; // (nodeid, nodetype, edgetype)
+      queue<tuple<uint32_t,string,string>> q; // (nodeid, nodetype, edgetype)
       unordered_map<uint32_t,uint32_t> d;
 
-      q.push(make_tuple(kv.first.first, kv.first.second, ' '));
+      q.push(make_tuple(kv.first.first, kv.first.second, " "));
       d[kv.first.first] = 0;
 
       while (!q.empty()) {
@@ -298,15 +319,24 @@ update_streamhash_sketches(const edge& e, const vector<graph>& graphs,
   string last_chunk("x", last_chunk_length);
   int len = last_chunk_length, i = n_outgoing_edges - 1;
   do {
-    last_chunk[--len] = get<1>(outgoing_edges[i]); // dst_type
+    // last_chunk[--len] = get<1>(outgoing_edges[i]); // dst_type
+    for (auto& c : get<1>(outgoing_edges[i])) {
+      last_chunk[--len] = c;
+    }
     if (len <= 0)
       break;
-    last_chunk[--len] = get<2>(outgoing_edges[i]); // edge_type
+    // last_chunk[--len] = get<2>(outgoing_edges[i]); // edge_type
+    for (auto& c : get<2>(outgoing_edges[i])) {
+      last_chunk[--len] = c;
+    }
     i--;
   } while (len > 0 && i >= 0);
   if (i < 0) {
     if (len == 2) {
-      last_chunk[--len] = src_type;
+      // last_chunk[--len] = src_type;
+      for (auto& c : src_type) {
+        last_chunk[--len] = c;
+      }
     }
     if (len == 1) {
       last_chunk[--len] = ' ';
@@ -319,23 +349,35 @@ update_streamhash_sketches(const edge& e, const vector<graph>& graphs,
     len = chunk_length;
 
     if (last_chunk_length % 2 != 0) {
-      sec_last_chunk[--len] = get<2>(outgoing_edges[i]); // edge_type
+      // sec_last_chunk[--len] = get<2>(outgoing_edges[i]); // edge_type
+      for (auto& c : get<2>(outgoing_edges[i])) {
+        sec_last_chunk[--len] = c;
+      }
       i--;
     }
- 
+
     if (i >=0 && len >= 0) {
       do {
-        sec_last_chunk[--len] = get<1>(outgoing_edges[i]);
+        // sec_last_chunk[--len] = get<1>(outgoing_edges[i]);
+        for (auto& c : get<1>(outgoing_edges[i])) {
+          sec_last_chunk[--len] = c;
+        }
         if (len <= 0)
           break;
-        sec_last_chunk[--len] = get<2>(outgoing_edges[i]);
+        // sec_last_chunk[--len] = get<2>(outgoing_edges[i]);
+        for (auto& c : get<2>(outgoing_edges[i])) {
+          sec_last_chunk[--len] = c;
+        }
         i--;
       } while (len > 0 && i >= 0);
     }
 
     if (i < 0) {
       if (len == 2) {
-        sec_last_chunk[--len] = src_type;
+        // sec_last_chunk[--len] = src_type;
+        for (auto& c : src_type) {
+          sec_last_chunk[--len] = c;
+        }
       }
       if (len == 1) {
         sec_last_chunk[--len] = ' ';
@@ -346,10 +388,13 @@ update_streamhash_sketches(const edge& e, const vector<graph>& graphs,
 #ifdef DEBUG
   string shingle(" ", 1);
   shingle.reserve(2 * (n_outgoing_edges + 1));
-  shingle.push_back(src_type);
+  // shingle.push_back(src_type);
+  shingle += src_type;
   for (uint32_t i = 0; i < n_outgoing_edges; i++) {
-    shingle.push_back(get<2>(outgoing_edges[i]));
-    shingle.push_back(get<1>(outgoing_edges[i]));
+    // shingle.push_back(get<2>(outgoing_edges[i]));
+    // shingle.push_back(get<1>(outgoing_edges[i]));
+    shingle += get<2>(outgoing_edges[i]);
+    shingle += get<1>(outgoing_edges[i]);
   }
 
   cout << "Shingle: " << shingle << endl;
@@ -388,7 +433,7 @@ update_streamhash_sketches(const edge& e, const vector<graph>& graphs,
     cout << c << ",";
   }
   cout << endl;
- 
+
   cout << "Outgoing chunks: ";
   for (auto& c : outgoing_chunks) {
     cout << c << ",";
@@ -432,6 +477,7 @@ update_streamhash_sketches(const edge& e, const vector<graph>& graphs,
 vector<string> get_string_chunks(string s, uint32_t len) {
   vector<string> chunks;
   for (uint32_t offset = 0; offset < s.length(); offset += len) {
+    cout << "+chunk: " << s.substr(offset, len) << endl;
     chunks.push_back(s.substr(offset, len));
   }
   return chunks;

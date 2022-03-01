@@ -14,7 +14,7 @@ def read_bootstrap_clusters(bootstrap_file):
         lines = fin.readlines()
 
     for i, l in enumerate(lines):
-        data = l.strip('\n').split(' ')
+        data = l.strip('\n').split('\t')
         if i == 0:
             nclusters = int(data[0])
             global_threshold = float(data[1])

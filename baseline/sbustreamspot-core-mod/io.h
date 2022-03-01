@@ -1,4 +1,4 @@
-/*
+/* 
  * Copyright 2016 Emaad Ahmed Manzoor
  * License: Apache License, Version 2.0
  * http://www3.cs.stonybrook.edu/~emanzoor/streamspot/
@@ -20,8 +20,6 @@ tuple<uint32_t,vector<edge>,unordered_map<uint32_t,vector<edge>>,uint32_t>
 tuple<vector<vector<uint32_t>>, vector<double>, double>
   read_bootstrap_clusters(string bootstrap_file);
 
-void write_sketches_to_file(string filename, vector<bitset<L>> sketches);
-void write_anomaly_scores_to_file(string filename, vector<double> scores);
 }
 
 #endif

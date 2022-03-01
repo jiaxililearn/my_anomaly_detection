@@ -21,6 +21,7 @@ logging.basicConfig(level=logging.DEBUG)
 # chunk_length = 500
 # num_parallel_graphs = 10
 # max_num_edges = 100
+CHECKPOINT_SIZE = 500000
 
 
 @click.command()
@@ -113,7 +114,9 @@ def main(edges, bootstrap, chunk_length, num_parallel_graphs, max_num_edges):
         cache_size = max_num_edges
     cache = deque()
 
-    for group in groups:
+    seen_edges = 0
+    checkpoint_num = 0
+    for index, group in enumerate(groups):
         logging.info('Straming group: ')
         logging.debug(f"{group}")
 
@@ -126,7 +129,8 @@ def main(edges, bootstrap, chunk_length, num_parallel_graphs, max_num_edges):
             gid = group_copy[gidx]
             off = edge_offset[gid]
 
-            logging.debug(f"Streaming graph {gid} offset {off}")
+            logging.info(
+                f"Streaming graph {gid} offset {off} / {len(test_edges[gid])} from group index {index}")
             e = test_edges[gid][off]
 
             # Process Edge
@@ -157,6 +161,13 @@ def main(edges, bootstrap, chunk_length, num_parallel_graphs, max_num_edges):
                                           cluster_thresholds)
 
             statistics.append([gid, anomaly_scores[gid], cluster_map[gid], e])
+            seen_edges += 1
+
+            # Write summary checkpoint
+            if seen_edges % CHECKPOINT_SIZE == 0:
+                write_checkpoint(statistics, checkpoint_num)
+                statistics = []
+                checkpoint_num += 1
 
             end = time.time()
             cluster_update_times = end - start
@@ -177,13 +188,17 @@ def main(edges, bootstrap, chunk_length, num_parallel_graphs, max_num_edges):
 
             edge_offset[gid] += 1
 
-            if edge_offset[gid] == len(test_edges[gid]):
+            if edge_offset[gid] >= len(test_edges[gid]):
                 group_copy.remove(gid)
 
                 logging.debug(f"Erasing graph {group[gidx]}")
                 logging.debug(f"New group: {group_copy}")
 
     # skip Runtimes Summary from original code
+
+    # write last summary checkpoint
+    if len(statistics) > 0:
+        write_checkpoint(statistics, checkpoint_num)
 
     # print size of each test graph in memory
     logging.debug("Test graph sizes: ")
@@ -203,12 +218,15 @@ def main(edges, bootstrap, chunk_length, num_parallel_graphs, max_num_edges):
     logging.debug(f"Graph projection\n\t: {streamhash_projections}")
     logging.debug(f"Centroid projection\n\t: {centroid_projections}")
 
+    return
+
+
+def write_checkpoint(statistics, idx):
     # write output anomaly summary
-    output_summary_file = '../../data/anomaly_summary.json'
-    logging.info(f"wrting anomaly statistics into {output_summary_file}")
+    output_summary_file = f'../../data/summary_checkpoint/anomaly_summary_full_{idx}.json'
+    logging.info(f"wrting anomaly statistics checkpoint into {output_summary_file}")
     with open(output_summary_file, 'w') as fout:
         fout.write(json.dumps(statistics))
-    return
 
 
 if __name__ == '__main__':
