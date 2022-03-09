@@ -194,4 +194,24 @@ void write_anomaly_scores_to_file(string filename, vector<double> scores) {
   }
 }
 
+void write_anomaly_iterations_to_file(string filename, vector<vector<double>> iterations) {
+  ofstream outFile(filename);
+  for (auto &itr : iterations) {
+    for (auto &s : itr){
+      outFile << s << ' ';
+    }
+    outFile << endl;
+  }
+}
+
+void write_cluster_iterations_to_file(string filename, vector<vector<int>> iterations) {
+  ofstream outFile(filename);
+  for (auto &itr : iterations) {
+    for (auto &s : itr){
+      outFile << s << ' ';
+    }
+    outFile << endl;
+  }
+}
+
 }

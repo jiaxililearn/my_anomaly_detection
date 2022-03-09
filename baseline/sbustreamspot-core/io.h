@@ -22,6 +22,8 @@ tuple<vector<vector<uint32_t>>, vector<double>, double>
 
 void write_sketches_to_file(string filename, vector<bitset<L>> sketches);
 void write_anomaly_scores_to_file(string filename, vector<double> scores);
+void write_anomaly_iterations_to_file(string filename, vector<vector<double>> iterations);
+void write_cluster_iterations_to_file(string filename, vector<vector<int>> iterations);
 }
 
 #endif
