@@ -1,4 +1,4 @@
-/* 
+/*
  * Copyright 2016 Emaad Ahmed Manzoor
  * License: Apache License, Version 2.0
  */
@@ -11,7 +11,7 @@
 #endif
 
 #define K                 1
-#define B                 100
+#define B                 50
 #define R                 20
 #define BUF_SIZE          50
 #define DELIMITER         '\t'
