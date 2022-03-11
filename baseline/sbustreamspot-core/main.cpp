@@ -237,8 +237,21 @@ int main(int argc, char *argv[]) {
 
   // construct bootstrap graphs offline
   cout << "Constructing " << train_gids.size() << " training graphs:" << endl;
+  unordered_map<uint32_t,uint32_t> training_graph_edges;
   for (auto& e : train_edges) {
-    update_graphs(e, graphs);
+    auto& tgid = get<F_GID>(e);
+
+    if (training_graph_edges.find(tgid) == training_graph_edges.end()){
+      training_graph_edges[tgid] = 0;
+    } else{
+      training_graph_edges[tgid]++;
+    }
+
+    if (training_graph_edges[tgid] < 10000){
+      update_graphs(e, graphs);
+    } else{
+      cout << "Trainig Graph " << tgid << " reached max 10000 edges. Skip edge." << endl;
+    }
   }
 
   // set up universal hash family for StreamHash
