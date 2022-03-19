@@ -100,6 +100,10 @@ int main(int argc, char *argv[]) {
   uint32_t chunk_length = args["--chunk-length"].asLong();
   uint32_t par = args["--num-parallel-graphs"].asLong();
 
+  // adding arg for percentage of attach graphs in the data
+  uint32_t attack_pct = args["--attach-pct"].asLong();
+  uint32_t max_num_attack_graph = (100 * attack_pct)/100;
+
   int max_num_edges = -1;
   if (args.find("--max-num-edges") != args.end()) {
     max_num_edges = args["--max-num-edges"].asLong();
@@ -190,11 +194,23 @@ int main(int argc, char *argv[]) {
 #endif
 
   // make groups of size par (parallel flowing graphs)
+
   vector<uint32_t> test_gids;
   for (uint32_t i = 0; i < num_graphs; i++) {
     if (scenarios.find(i/100) == scenarios.end()) {
       continue;
     }
+
+    // limiting number of attach graphs
+    if (i>=300 && i<=399){
+      if (i>=300 && i <300+max_num_attack_graph){
+        cout << "add attach graph " << i << endl;
+      }else{
+        cout << "skip attach graph " << i << endl;
+        continue;
+      }
+    }
+
     if (train_gids.find(i) == train_gids.end()) {
       test_gids.push_back(i);
     }
@@ -246,6 +262,7 @@ int main(int argc, char *argv[]) {
     } else{
       training_graph_edges[tgid]++;
     }
+    cout << "Current # traing graph edge: " << tgid << "/" << training_graph_edges[tgid] << endl;
 
     if (training_graph_edges[tgid] < 10000){
       update_graphs(e, graphs);
@@ -412,8 +429,10 @@ int main(int argc, char *argv[]) {
 
         // output streaming anomaly scores and cluster map
         cout << "Writing streaming evaluation at edge number " << edge_num << endl;
-        write_anomaly_iterations_to_file("/data/anomaly_score_iterations.txt", anomaly_score_iterations);
-        write_cluster_iterations_to_file("/data/cluster_map_iterations.txt", cluster_map_iterations);
+        string score_iteration_filename = "/data/anomaly_score_iterations_attack" + to_string(max_num_attack_graph) + ".txt";
+        string cluster_iteration_filename = "/data/cluster_map_iterations_attack" + to_string(max_num_attack_graph) + ".txt";
+        write_anomaly_iterations_to_file(score_iteration_filename, anomaly_score_iterations);
+        write_cluster_iterations_to_file(cluster_iteration_filename, cluster_map_iterations);
 
       }
 
