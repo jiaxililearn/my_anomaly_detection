@@ -473,8 +473,8 @@ for (uint32_t num_attach = 0; num_attach < max_num_attack_graph; num_attach++){
       }
     }
     // write iterations and cluster map
-    string score_iteration_filename = "/data/anomaly_score_iterations_attack" + to_string(num_attach) + ".txt";
-    string cluster_iteration_filename = "/data/cluster_map_iterations_attack" + to_string(num_attach) + ".txt";
+    string score_iteration_filename = "/data/anomaly_score_iterations_" + dataset +"_attack" + to_string(num_attach) + ".txt";
+    string cluster_iteration_filename = "/data/cluster_map_iterations_" + dataset +"_attack" + to_string(num_attach) + ".txt";
     write_anomaly_iterations_to_file(score_iteration_filename, anomaly_score_iterations);
     write_cluster_iterations_to_file(cluster_iteration_filename, cluster_map_iterations);
 
