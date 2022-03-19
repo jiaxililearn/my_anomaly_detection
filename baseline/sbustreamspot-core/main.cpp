@@ -333,6 +333,8 @@ for (uint32_t num_attach = 0; num_attach < max_num_attack_graph; num_attach++){
 
     // add test edges to graphs
     cout << "Streaming in " << num_test_edges << " test edges:" << endl;
+    cout << "Streaming in " << test_gids.size() << " test graphs:" << endl;
+
     vector<chrono::nanoseconds> graph_update_times(num_test_edges,
                                                    chrono::nanoseconds(0));
     vector<chrono::nanoseconds> sketch_update_times(num_test_edges,
