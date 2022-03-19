@@ -121,8 +121,10 @@ int main(int argc, char *argv[]) {
   }
 
   // adding arg for percentage of attach graphs in the data
-  uint32_t attack_pct = args["--attack-pct"].asLong();
-  uint32_t max_num_attack_graph = (100 * attack_pct)/100;
+  uint32_t num_attack_graph_part = args["--attack-pct"].asLong();
+  // uint32_t num_attack_graph = (100 * attack_pct)/100;
+  uint32_t num_attack_graph_start = num_attack_graph_part == 0 ? 0 : 50;
+  uint32_t num_attack_graph_end = num_attack_graph_part == 0 ? 50 : 100;
 
   cout << "StreamSpot (";
   cout << "C=" << chunk_length << ", ";
@@ -279,7 +281,7 @@ int main(int argc, char *argv[]) {
 
 
 // create evaluation of every number of attach number of graphs
-for (uint32_t num_attach = 0; num_attach < max_num_attack_graph; num_attach++){
+for (uint32_t num_attach = num_attack_graph_start; num_attach < num_attack_graph_end; num_attach++){
 
   // make groups of size par (parallel flowing graphs)
   vector<uint32_t> test_gids;
