@@ -38,6 +38,7 @@ R"(StreamSpot.
                  --num-parallel-graphs=<num parallel graphs>
                  [--max-num-edges=<max num edges>]
                  [--dataset=<dataset>]
+                 [--attack-pct=<max attach graphs>]
 
       streamspot (-h | --help)
 
@@ -48,6 +49,7 @@ R"(StreamSpot.
       --chunk-length=<chunk length>           Parameter C.
       --max-num-edges=<max num edges>         Parameter N [default: inf].
       --dataset=<dataset>                     'all', 'ydc', 'gfc' [default: all].
+      --attack-pct<max attach graphs>         Max number of attach graphs in test.
 )";
 
 void allocate_random_bits(vector<vector<uint64_t>>&, mt19937_64&, uint32_t);
@@ -100,10 +102,6 @@ int main(int argc, char *argv[]) {
   uint32_t chunk_length = args["--chunk-length"].asLong();
   uint32_t par = args["--num-parallel-graphs"].asLong();
 
-  // adding arg for percentage of attach graphs in the data
-  uint32_t attack_pct = args["--attach-pct"].asLong();
-  uint32_t max_num_attack_graph = (100 * attack_pct)/100;
-
   int max_num_edges = -1;
   if (args.find("--max-num-edges") != args.end()) {
     max_num_edges = args["--max-num-edges"].asLong();
@@ -121,6 +119,10 @@ int main(int argc, char *argv[]) {
     cout << "Should be 'all' | 'ydc' | 'gfc'." << endl;
     exit(-1);
   }
+
+  // adding arg for percentage of attach graphs in the data
+  uint32_t attack_pct = args["--attack-pct"].asLong();
+  uint32_t max_num_attack_graph = (100 * attack_pct)/100;
 
   cout << "StreamSpot (";
   cout << "C=" << chunk_length << ", ";
