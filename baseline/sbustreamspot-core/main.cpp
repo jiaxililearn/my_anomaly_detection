@@ -353,6 +353,8 @@ for (uint32_t num_attach = num_attack_graph_start; num_attach < num_attack_graph
                                                     vector<double>(num_graphs));
     vector<vector<int>> cluster_map_iterations(num_intervals,
                                                vector<int>(num_graphs));
+    vector<vector<int>> updated_graph_iterations(num_intervals,
+                                              vector<int>(num_graphs, 0));
 
     uint32_t cache_size = num_test_edges;
     if (max_num_edges > 0) {
@@ -387,6 +389,8 @@ for (uint32_t num_attach = num_attack_graph_start; num_attach < num_attack_graph
   #ifdef DEBUG
         cout << "\tStreaming graph " << gid << " offset " << off << endl;
   #endif
+        // update graph in current iteration
+        updated_graph_iterations[edge_num/CLUSTER_UPDATE_INTERVAL][gid] = 1;
 
         auto& e = test_edges[gid][off];
 
@@ -477,8 +481,10 @@ for (uint32_t num_attach = num_attack_graph_start; num_attach < num_attack_graph
     // write iterations and cluster map
     string score_iteration_filename = "/data/anomaly_score_iterations_" + dataset +"_attack" + to_string(num_attach) + ".txt";
     string cluster_iteration_filename = "/data/cluster_map_iterations_" + dataset +"_attack" + to_string(num_attach) + ".txt";
+    string updated_graph_iterations_filename = "/data/updated_graph_iterations_" + dataset +"_attack" + to_string(num_attach) + ".txt";
     write_anomaly_iterations_to_file(score_iteration_filename, anomaly_score_iterations);
     write_cluster_iterations_to_file(cluster_iteration_filename, cluster_map_iterations);
+    write_cluster_iterations_to_file(updated_graph_iterations_filename, updated_graph_iterations);
 
 
     chrono::nanoseconds mean_graph_update_time(0);
