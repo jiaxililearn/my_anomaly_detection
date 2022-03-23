@@ -38,7 +38,7 @@ R"(StreamSpot.
                  --num-parallel-graphs=<num parallel graphs>
                  [--max-num-edges=<max num edges>]
                  [--dataset=<dataset>]
-                 [--attack-pct=<max attach graphs>]
+                 [--noise-pct=<percent>]
 
       streamspot (-h | --help)
 
@@ -49,7 +49,7 @@ R"(StreamSpot.
       --chunk-length=<chunk length>           Parameter C.
       --max-num-edges=<max num edges>         Parameter N [default: inf].
       --dataset=<dataset>                     'all', 'ydc', 'gfc' [default: all].
-      --attack-pct<max attach graphs>         Max number of attach graphs in test.
+      --noise-pct=<percent>                   noise percent in trainig
 )";
 
 void allocate_random_bits(vector<vector<uint64_t>>&, mt19937_64&, uint32_t);
@@ -120,11 +120,8 @@ int main(int argc, char *argv[]) {
     exit(-1);
   }
 
-  // adding arg for percentage of attach graphs in the data
-  uint32_t num_attack_graph_part = args["--attack-pct"].asLong();
-  // uint32_t num_attack_graph = (100 * attack_pct)/100;
-  uint32_t num_attack_graph_start = num_attack_graph_part == 0 ? 0 : 50;
-  uint32_t num_attack_graph_end = num_attack_graph_part == 0 ? 50 : 100;
+  // add noise percent
+  uint32_t num_noise = args["--noise-pct"].asLong();
 
   cout << "StreamSpot (";
   cout << "C=" << chunk_length << ", ";
@@ -217,7 +214,7 @@ int main(int argc, char *argv[]) {
     } else{
       training_graph_edges[tgid]++;
     }
-    cout << "Current # traing graph edge: " << tgid << "/" << training_graph_edges[tgid] << endl;
+    // cout << "Current # traing graph edge: " << tgid << "/" << training_graph_edges[tgid] << endl;
 
     if (training_graph_edges[tgid] < 10000){
       update_graphs(e, graphs);
@@ -280,24 +277,12 @@ int main(int argc, char *argv[]) {
 #endif
 
 
-// create evaluation of every number of attach number of graphs
-for (uint32_t num_attach = num_attack_graph_start; num_attach < num_attack_graph_end; num_attach++){
 
   // make groups of size par (parallel flowing graphs)
   vector<uint32_t> test_gids;
   for (uint32_t i = 0; i < num_graphs; i++) {
     if (scenarios.find(i/100) == scenarios.end()) {
       continue;
-    }
-
-    // limiting number of attach graphs
-    if (i>=300 && i<=399){
-      if (i>=300 && i <300+num_attach){
-        cout << "add attach graph " << i << endl;
-      }else{
-        cout << "skip attach graph " << i << endl;
-        continue;
-      }
     }
 
     if (train_gids.find(i) == train_gids.end()) {
@@ -333,237 +318,237 @@ for (uint32_t num_attach = num_attack_graph_start; num_attach < num_attack_graph
   }
   #endif
 
-    // add test edges to graphs
-    cout << "Streaming in " << num_test_edges << " test edges:" << endl;
-    cout << "Streaming in " << test_gids.size() << " test graphs:" << endl;
+  // add test edges to graphs
+  cout << "Streaming in " << num_test_edges << " test edges:" << endl;
+  cout << "Streaming in " << test_gids.size() << " test graphs:" << endl;
 
-    vector<chrono::nanoseconds> graph_update_times(num_test_edges,
+  vector<chrono::nanoseconds> graph_update_times(num_test_edges,
+                                                 chrono::nanoseconds(0));
+  vector<chrono::nanoseconds> sketch_update_times(num_test_edges,
+                                                  chrono::nanoseconds(0));
+  vector<chrono::nanoseconds> shingle_construction_times(num_test_edges,
+                                                         chrono::nanoseconds(0));
+  vector<chrono::nanoseconds> cluster_update_times(num_test_edges,
                                                    chrono::nanoseconds(0));
-    vector<chrono::nanoseconds> sketch_update_times(num_test_edges,
-                                                    chrono::nanoseconds(0));
-    vector<chrono::nanoseconds> shingle_construction_times(num_test_edges,
-                                                           chrono::nanoseconds(0));
-    vector<chrono::nanoseconds> cluster_update_times(num_test_edges,
-                                                     chrono::nanoseconds(0));
-    uint32_t num_intervals = ceil(static_cast<double>(num_test_edges) /
-                                  CLUSTER_UPDATE_INTERVAL);
-    if (num_intervals == 0)
-      num_intervals = 1; // if interval length is too long
-    vector<vector<double>> anomaly_score_iterations(num_intervals,
-                                                    vector<double>(num_graphs));
-    vector<vector<int>> cluster_map_iterations(num_intervals,
-                                               vector<int>(num_graphs));
-    vector<vector<int>> updated_graph_iterations(num_intervals,
-                                              vector<int>(num_graphs, 0));
+  uint32_t num_intervals = ceil(static_cast<double>(num_test_edges) /
+                                CLUSTER_UPDATE_INTERVAL);
+  if (num_intervals == 0)
+    num_intervals = 1; // if interval length is too long
+  vector<vector<double>> anomaly_score_iterations(num_intervals,
+                                                  vector<double>(num_graphs));
+  vector<vector<int>> cluster_map_iterations(num_intervals,
+                                             vector<int>(num_graphs));
+  vector<vector<int>> updated_graph_iterations(num_intervals,
+                                            vector<int>(num_graphs, 0));
 
-    uint32_t cache_size = num_test_edges;
-    if (max_num_edges > 0) {
-      cache_size = max_num_edges;
-    }
-    deque<edge> cache;
+  uint32_t cache_size = num_test_edges;
+  if (max_num_edges > 0) {
+    cache_size = max_num_edges;
+  }
+  deque<edge> cache;
 
-    uint32_t edge_num = 0;
-    for (auto& group : groups) {
+  uint32_t edge_num = 0;
+  for (auto& group : groups) {
 
-  #ifdef DEBUG
-      cout << "Streaming group: ";
-      for (auto& g : group)
-        cout << g << " ";
-      cout << endl;
-  #endif
+#ifdef DEBUG
+    cout << "Streaming group: ";
+    for (auto& g : group)
+      cout << g << " ";
+    cout << endl;
+#endif
 
-      unordered_map<uint32_t,uint32_t> edge_offset;
-      for (auto &g : group)
-        edge_offset[g] = 0;
+    unordered_map<uint32_t,uint32_t> edge_offset;
+    for (auto &g : group)
+      edge_offset[g] = 0;
 
-      vector<uint32_t> group_copy(group);
-      while (group_copy.size() > 0) {
-        // used to pick a random graph
-        uniform_int_distribution<uint32_t> rand_group_idx(0,
-                                                          group_copy.size() - 1);
+    vector<uint32_t> group_copy(group);
+    while (group_copy.size() > 0) {
+      // used to pick a random graph
+      uniform_int_distribution<uint32_t> rand_group_idx(0,
+                                                        group_copy.size() - 1);
 
-        uint32_t gidx = rand_group_idx(prng);
-        uint32_t gid = group_copy[gidx];
-        uint32_t off = edge_offset[gid];
+      uint32_t gidx = rand_group_idx(prng);
+      uint32_t gid = group_copy[gidx];
+      uint32_t off = edge_offset[gid];
 
-  #ifdef DEBUG
-        cout << "\tStreaming graph " << gid << " offset " << off << endl;
-  #endif
-        // update graph in current iteration
-        updated_graph_iterations[edge_num/CLUSTER_UPDATE_INTERVAL][gid] = 1;
+#ifdef DEBUG
+      cout << "\tStreaming graph " << gid << " offset " << off << endl;
+#endif
+      // update graph in current iteration
+      updated_graph_iterations[edge_num/CLUSTER_UPDATE_INTERVAL][gid] = 1;
 
-        auto& e = test_edges[gid][off];
+      auto& e = test_edges[gid][off];
 
-        //
-        // PROCESS EDGE
-        //
+      //
+      // PROCESS EDGE
+      //
 
-        // check if cache is full
-        if (cache.size() == cache_size) {
-          auto& edge_to_evict = cache.front(); // oldest edge at head
-          remove_from_graph(edge_to_evict, graphs);
-          cache.pop_front();
-        }
-        cache.push_back(e); // newest edge at tail
+      // check if cache is full
+      if (cache.size() == cache_size) {
+        auto& edge_to_evict = cache.front(); // oldest edge at head
+        remove_from_graph(edge_to_evict, graphs);
+        cache.pop_front();
+      }
+      cache.push_back(e); // newest edge at tail
 
-        // update graph
-        start = chrono::steady_clock::now();
-        update_graphs(e, graphs);
-        end = chrono::steady_clock::now();
-        diff = chrono::duration_cast<chrono::nanoseconds>(end - start);
-        graph_update_times[edge_num] = diff;
+      // update graph
+      start = chrono::steady_clock::now();
+      update_graphs(e, graphs);
+      end = chrono::steady_clock::now();
+      diff = chrono::duration_cast<chrono::nanoseconds>(end - start);
+      graph_update_times[edge_num] = diff;
 
-        // update sketches
-        chrono::nanoseconds shingle_construction_time;
-        chrono::nanoseconds sketch_update_time;
-        vector<int> projection_delta;
-        tie(projection_delta, shingle_construction_time, sketch_update_time) =
-          update_streamhash_sketches(e, graphs, streamhash_sketches,
-                                     streamhash_projections, chunk_length, H);
-        sketch_update_times[edge_num] = sketch_update_time;
-        shingle_construction_times[edge_num] = shingle_construction_time;
+      // update sketches
+      chrono::nanoseconds shingle_construction_time;
+      chrono::nanoseconds sketch_update_time;
+      vector<int> projection_delta;
+      tie(projection_delta, shingle_construction_time, sketch_update_time) =
+        update_streamhash_sketches(e, graphs, streamhash_sketches,
+                                   streamhash_projections, chunk_length, H);
+      sketch_update_times[edge_num] = sketch_update_time;
+      shingle_construction_times[edge_num] = shingle_construction_time;
 
-        // update centroids and centroid-graph distances
-        start = chrono::steady_clock::now();
-        update_distances_and_clusters(gid, projection_delta,
-                                      streamhash_sketches,
-                                      streamhash_projections,
-                                      centroid_sketches, centroid_projections,
-                                      cluster_sizes, cluster_map,
-                                      anomaly_scores, global_threshold,
-                                      cluster_thresholds);
-        end = chrono::steady_clock::now();
-        diff = chrono::duration_cast<chrono::nanoseconds>(end - start);
-        cluster_update_times[edge_num] = diff;
+      // update centroids and centroid-graph distances
+      start = chrono::steady_clock::now();
+      update_distances_and_clusters(gid, projection_delta,
+                                    streamhash_sketches,
+                                    streamhash_projections,
+                                    centroid_sketches, centroid_projections,
+                                    cluster_sizes, cluster_map,
+                                    anomaly_scores, global_threshold,
+                                    cluster_thresholds);
+      end = chrono::steady_clock::now();
+      diff = chrono::duration_cast<chrono::nanoseconds>(end - start);
+      cluster_update_times[edge_num] = diff;
 
-        // store current anomaly scores and cluster assignments
-        if (edge_num % CLUSTER_UPDATE_INTERVAL == 0 ||
-            edge_num == num_test_edges - 1) {
-          anomaly_score_iterations[edge_num/CLUSTER_UPDATE_INTERVAL] = anomaly_scores;
-          cluster_map_iterations[edge_num/CLUSTER_UPDATE_INTERVAL] = cluster_map;
+      // store current anomaly scores and cluster assignments
+      if (edge_num % CLUSTER_UPDATE_INTERVAL == 0 ||
+          edge_num == num_test_edges - 1) {
+        anomaly_score_iterations[edge_num/CLUSTER_UPDATE_INTERVAL] = anomaly_scores;
+        cluster_map_iterations[edge_num/CLUSTER_UPDATE_INTERVAL] = cluster_map;
 
-          // output streaming anomaly scores and cluster map
-          cout << "streaming evaluation at edge number " << edge_num << endl;
-        }
+        // output streaming anomaly scores and cluster map
+        cout << "streaming evaluation at edge number " << edge_num << endl;
+      }
 
-        edge_num++;
+      edge_num++;
 
-  #ifdef DEBUG
-        chrono::nanoseconds last_graph_update_time =
-          graph_update_times[graph_update_times.size() - 1];
-        chrono::nanoseconds last_sketch_update_time =
-          sketch_update_times[sketch_update_times.size() - 1];
-        chrono::nanoseconds last_cluster_update_time =
-          cluster_update_times[cluster_update_times.size() - 1];
-        cout << "\tMost recent run times: ";
-        cout << static_cast<double>(last_graph_update_time.count()) << "us";
-        cout << " (graph), ";
-        cout << static_cast<double>(last_sketch_update_time.count()) << "us";
-        cout << " (sketch), ";
-        cout << static_cast<double>(last_cluster_update_time.count()) << "us";
-        cout << " (cluster)" << endl;
-  #endif
+#ifdef DEBUG
+      chrono::nanoseconds last_graph_update_time =
+        graph_update_times[graph_update_times.size() - 1];
+      chrono::nanoseconds last_sketch_update_time =
+        sketch_update_times[sketch_update_times.size() - 1];
+      chrono::nanoseconds last_cluster_update_time =
+        cluster_update_times[cluster_update_times.size() - 1];
+      cout << "\tMost recent run times: ";
+      cout << static_cast<double>(last_graph_update_time.count()) << "us";
+      cout << " (graph), ";
+      cout << static_cast<double>(last_sketch_update_time.count()) << "us";
+      cout << " (sketch), ";
+      cout << static_cast<double>(last_cluster_update_time.count()) << "us";
+      cout << " (cluster)" << endl;
+#endif
 
-        edge_offset[gid]++; // increment next edge offset
-        if (edge_offset[gid] == test_edges[gid].size()) {
-          // out of edges for this gid
-          group_copy.erase(group_copy.begin() + gidx);
-  #ifdef DEBUG
-          cout << "Erasing graph " << group[gidx] << endl;
-          cout << "New group: ";
-          for (auto& g : group_copy)
-            cout << g << " ";
-          cout << endl;
-  #endif
-        }
+      edge_offset[gid]++; // increment next edge offset
+      if (edge_offset[gid] == test_edges[gid].size()) {
+        // out of edges for this gid
+        group_copy.erase(group_copy.begin() + gidx);
+#ifdef DEBUG
+        cout << "Erasing graph " << group[gidx] << endl;
+        cout << "New group: ";
+        for (auto& g : group_copy)
+          cout << g << " ";
+        cout << endl;
+#endif
       }
     }
-    // write iterations and cluster map
-    string score_iteration_filename = "/data/anomaly_score_iterations_" + dataset +"_attack" + to_string(num_attach) + ".txt";
-    string cluster_iteration_filename = "/data/cluster_map_iterations_" + dataset +"_attack" + to_string(num_attach) + ".txt";
-    string updated_graph_iterations_filename = "/data/updated_graph_iterations_" + dataset +"_attack" + to_string(num_attach) + ".txt";
-    write_anomaly_iterations_to_file(score_iteration_filename, anomaly_score_iterations);
-    write_cluster_iterations_to_file(cluster_iteration_filename, cluster_map_iterations);
-    write_cluster_iterations_to_file(updated_graph_iterations_filename, updated_graph_iterations);
+  }
+  // write iterations and cluster map
+  string score_iteration_filename = "/data/anomaly_score_iterations_" + dataset +"_noise" + to_string(num_noise) + ".txt";
+  string cluster_iteration_filename = "/data/cluster_map_iterations_" + dataset +"_noise" + to_string(num_noise) + ".txt";
+  string updated_graph_iterations_filename = "/data/updated_graph_iterations_" + dataset +"_noise" + to_string(num_noise) + ".txt";
+  write_anomaly_iterations_to_file(score_iteration_filename, anomaly_score_iterations);
+  write_cluster_iterations_to_file(cluster_iteration_filename, cluster_map_iterations);
+  write_cluster_iterations_to_file(updated_graph_iterations_filename, updated_graph_iterations);
 
 
-    chrono::nanoseconds mean_graph_update_time(0);
-    for (auto& t : graph_update_times) {
-      mean_graph_update_time += t;
+  chrono::nanoseconds mean_graph_update_time(0);
+  for (auto& t : graph_update_times) {
+    mean_graph_update_time += t;
+  }
+  mean_graph_update_time /= graph_update_times.size();
+
+  chrono::nanoseconds mean_sketch_update_time(0);
+  for (auto& t : sketch_update_times) {
+    mean_sketch_update_time += t;
+  }
+  mean_sketch_update_time /= sketch_update_times.size();
+
+  chrono::nanoseconds mean_shingle_construction_time(0);
+  for (auto& t : shingle_construction_times) {
+    mean_shingle_construction_time += t;
+  }
+  mean_shingle_construction_time /= shingle_construction_times.size();
+
+  chrono::nanoseconds mean_cluster_update_time(0);
+  for (auto& t : cluster_update_times) {
+    mean_cluster_update_time += t;
+  }
+  mean_cluster_update_time /= cluster_update_times.size();
+
+  cout << "Runtimes (per-edge):" << endl;
+  cout << "\tGraph update: ";
+  cout << static_cast<double>(mean_graph_update_time.count()) << "us" << endl;
+  cout << "\tShingle construction: ";
+  cout << static_cast<double>(mean_shingle_construction_time.count()) << "us" << endl;
+  cout << "\tSketch update: ";
+  cout << static_cast<double>(mean_sketch_update_time.count()) << "us" << endl;
+  cout << "\tCluster update: ";
+  cout << static_cast<double>(mean_cluster_update_time.count()) << "us" << endl;
+
+  // print size of each test graph in memory
+  cout << "Test graph sizes: " << endl;
+  for (auto& gid : test_gids) {
+    uint32_t size = 0;
+    for (auto& kv : graphs[gid]) {
+      size += kv.second.size();
     }
-    mean_graph_update_time /= graph_update_times.size();
+    cout << gid << "," << size << " ";
+  }
+  cout << endl;
 
-    chrono::nanoseconds mean_sketch_update_time(0);
-    for (auto& t : sketch_update_times) {
-      mean_sketch_update_time += t;
-    }
-    mean_sketch_update_time /= sketch_update_times.size();
-
-    chrono::nanoseconds mean_shingle_construction_time(0);
-    for (auto& t : shingle_construction_times) {
-      mean_shingle_construction_time += t;
-    }
-    mean_shingle_construction_time /= shingle_construction_times.size();
-
-    chrono::nanoseconds mean_cluster_update_time(0);
-    for (auto& t : cluster_update_times) {
-      mean_cluster_update_time += t;
-    }
-    mean_cluster_update_time /= cluster_update_times.size();
-
-    cout << "Runtimes (per-edge):" << endl;
-    cout << "\tGraph update: ";
-    cout << static_cast<double>(mean_graph_update_time.count()) << "us" << endl;
-    cout << "\tShingle construction: ";
-    cout << static_cast<double>(mean_shingle_construction_time.count()) << "us" << endl;
-    cout << "\tSketch update: ";
-    cout << static_cast<double>(mean_sketch_update_time.count()) << "us" << endl;
-    cout << "\tCluster update: ";
-    cout << static_cast<double>(mean_cluster_update_time.count()) << "us" << endl;
-
-    // print size of each test graph in memory
-    cout << "Test graph sizes: " << endl;
-    for (auto& gid : test_gids) {
-      uint32_t size = 0;
-      for (auto& kv : graphs[gid]) {
-        size += kv.second.size();
-      }
-      cout << gid << "," << size << " ";
+  cout << "Iterations " << num_intervals << endl;
+  for (uint32_t i = 0; i < num_intervals; i++) {
+    auto& a = anomaly_score_iterations[i];
+    auto& c = cluster_map_iterations[i];
+    for (uint32_t j = 0; j < a.size(); j++) {
+      cout << a[j] << " ";
     }
     cout << endl;
-
-    cout << "Iterations " << num_intervals << endl;
-    for (uint32_t i = 0; i < num_intervals; i++) {
-      auto& a = anomaly_score_iterations[i];
-      auto& c = cluster_map_iterations[i];
-      for (uint32_t j = 0; j < a.size(); j++) {
-        cout << a[j] << " ";
-      }
-      cout << endl;
-      for (uint32_t j = 0; j < a.size(); j++) {
-        cout << c[j] << " ";
-      }
-      cout << endl;
+    for (uint32_t j = 0; j < a.size(); j++) {
+      cout << c[j] << " ";
     }
+    cout << endl;
+  }
 
-  #ifdef DEBUG
-    for (uint32_t i = 0; i < num_graphs; i++) {
-      cout << "Graph projection " << i << ": ";
-      for (uint32_t j = 0; j < 10; j++) {
-        cout << streamhash_projections[i][j] << " ";
-      }
-      cout << endl;
+#ifdef DEBUG
+  for (uint32_t i = 0; i < num_graphs; i++) {
+    cout << "Graph projection " << i << ": ";
+    for (uint32_t j = 0; j < 10; j++) {
+      cout << streamhash_projections[i][j] << " ";
     }
+    cout << endl;
+  }
 
-    for (uint32_t i = 0; i < centroid_projections.size(); i++) {
-      cout << "Centroid projection " << i << ": ";
-      for (uint32_t j = 0; j < 10; j++) {
-        cout << centroid_projections[i][j] << " ";
-      }
-      cout << endl;
+  for (uint32_t i = 0; i < centroid_projections.size(); i++) {
+    cout << "Centroid projection " << i << ": ";
+    for (uint32_t j = 0; j < 10; j++) {
+      cout << centroid_projections[i][j] << " ";
     }
-  #endif
-}
+    cout << endl;
+  }
+#endif
+
   /*cout << "Constructing shingle vectors:" << endl;
   start = chrono::steady_clock::now();
   construct_shingle_vectors(shingle_vectors, shingle_id, graphs,
