@@ -38,7 +38,8 @@ R"(StreamSpot.
                  --num-parallel-graphs=<num parallel graphs>
                  [--max-num-edges=<max num edges>]
                  [--dataset=<dataset>]
-                 [--noise-pct=<percent>]
+                 [--num-noise=<num noise>]
+                 [--num-test-attack=<num attack>]
 
       streamspot (-h | --help)
 
@@ -49,7 +50,8 @@ R"(StreamSpot.
       --chunk-length=<chunk length>           Parameter C.
       --max-num-edges=<max num edges>         Parameter N [default: inf].
       --dataset=<dataset>                     'all', 'ydc', 'gfc' [default: all].
-      --noise-pct=<percent>                   noise percent in trainig
+      --num-noise=<num noise>                 number of noise in bootstrap
+      --num-test-attack=<num attack>          number of attack in test
 )";
 
 void allocate_random_bits(vector<vector<uint64_t>>&, mt19937_64&, uint32_t);
@@ -120,8 +122,9 @@ int main(int argc, char *argv[]) {
     exit(-1);
   }
 
-  // add noise percent
-  uint32_t num_noise = args["--noise-pct"].asLong();
+  // add noise and test attack number
+  uint32_t num_noise = args["--num-noise"].asLong();
+  uint32_t num_test_attack = args["--num-test-attack"].asLong();
 
   cout << "StreamSpot (";
   cout << "C=" << chunk_length << ", ";
@@ -282,6 +285,18 @@ int main(int argc, char *argv[]) {
   vector<uint32_t> test_gids;
   for (uint32_t i = 0; i < num_graphs; i++) {
     if (scenarios.find(i/100) == scenarios.end()) {
+      continue;
+    }
+
+    // skip first 50 attach graphs. Fix test graphs and use the first 50 for noise
+    if (i >=300 && i <= 349){
+      cout << "Skip Attack gid " << i << ", due to fixed 50 attack graphs" << endl; 
+      continue;
+    }
+
+    // control number of attacks in test graphs
+    if (i > num_test_attack + 349 && i < 400){
+      cout << "Skip Attack gid " << i << ", due to (" << num_test_attack + 349 << ",400)" << endl;
       continue;
     }
 
@@ -464,9 +479,9 @@ int main(int argc, char *argv[]) {
     }
   }
   // write iterations and cluster map
-  string score_iteration_filename = "/data/anomaly_score_iterations_" + dataset +"_noise" + to_string(num_noise) + ".txt";
-  string cluster_iteration_filename = "/data/cluster_map_iterations_" + dataset +"_noise" + to_string(num_noise) + ".txt";
-  string updated_graph_iterations_filename = "/data/updated_graph_iterations_" + dataset +"_noise" + to_string(num_noise) + ".txt";
+  string score_iteration_filename = "/data/anomaly_score_iterations_" + dataset +"_noise" + to_string(num_noise) + "_attack" + to_string(num_test_attack) + ".txt";
+  string cluster_iteration_filename = "/data/cluster_map_iterations_" + dataset +"_noise" + to_string(num_noise) + "_attack" + to_string(num_test_attack) + ".txt";
+  string updated_graph_iterations_filename = "/data/updated_graph_iterations_" + dataset +"_noise" + to_string(num_noise) + "_attack" + to_string(num_test_attack) + ".txt";
   write_anomaly_iterations_to_file(score_iteration_filename, anomaly_score_iterations);
   write_cluster_iterations_to_file(cluster_iteration_filename, cluster_map_iterations);
   write_cluster_iterations_to_file(updated_graph_iterations_filename, updated_graph_iterations);

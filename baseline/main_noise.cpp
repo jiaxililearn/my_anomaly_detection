@@ -38,7 +38,7 @@ R"(StreamSpot.
                  --num-parallel-graphs=<num parallel graphs>
                  [--max-num-edges=<max num edges>]
                  [--dataset=<dataset>]
-                 [--attack-pct=<max attach graphs>]
+                 [--noise-pct=<percent>]
 
       streamspot (-h | --help)
 
@@ -49,7 +49,7 @@ R"(StreamSpot.
       --chunk-length=<chunk length>           Parameter C.
       --max-num-edges=<max num edges>         Parameter N [default: inf].
       --dataset=<dataset>                     'all', 'ydc', 'gfc' [default: all].
-      --attack-pct=<max attach graphs>         Max number of attach graphs in test.
+      --noise-pct=<percent>                   noise percent in trainig
 )";
 
 void allocate_random_bits(vector<vector<uint64_t>>&, mt19937_64&, uint32_t);
@@ -120,11 +120,8 @@ int main(int argc, char *argv[]) {
     exit(-1);
   }
 
-  // adding arg for percentage of attach graphs in the data
-  uint32_t num_attack_graph = args["--attack-pct"].asLong();
-  // uint32_t num_attack_graph = (100 * attack_pct)/100;
-//   uint32_t num_attack_graph_start = num_attack_graph_part == 0 ? 0 : 50;
-//   uint32_t num_attack_graph_end = num_attack_graph_part == 0 ? 50 : 100;
+  // add noise percent
+  uint32_t num_noise = args["--noise-pct"].asLong();
 
   cout << "StreamSpot (";
   cout << "C=" << chunk_length << ", ";
@@ -217,7 +214,7 @@ int main(int argc, char *argv[]) {
     } else{
       training_graph_edges[tgid]++;
     }
-//     cout << "Current # traing graph edge: " << tgid << "/" << training_graph_edges[tgid] << endl;
+    // cout << "Current # traing graph edge: " << tgid << "/" << training_graph_edges[tgid] << endl;
 
     if (training_graph_edges[tgid] < 10000){
       update_graphs(e, graphs);
@@ -280,24 +277,12 @@ int main(int argc, char *argv[]) {
 #endif
 
 
-// create evaluation of every number of attach number of graphs
-// for (uint32_t num_attach = num_attack_graph_start; num_attach < num_attack_graph_end; num_attach++){
 
-// make groups of size par (parallel flowing graphs)
+  // make groups of size par (parallel flowing graphs)
   vector<uint32_t> test_gids;
   for (uint32_t i = 0; i < num_graphs; i++) {
     if (scenarios.find(i/100) == scenarios.end()) {
       continue;
-    }
-
-    // limiting number of attach graphs
-    if (i>=300 && i<=399){
-      if (i>=300 && i <300+num_attack_graph){
-        cout << "add attach graph " << i << endl;
-      }else{
-        cout << "skip attach graph " << i << endl;
-        continue;
-      }
     }
 
     if (train_gids.find(i) == train_gids.end()) {
@@ -324,14 +309,14 @@ int main(int argc, char *argv[]) {
     groups.push_back(group);
   }
 
-#ifdef DEBUG
+  #ifdef DEBUG
   for (auto& group : groups) {
     for (auto& g : group) {
       cout << g << " ";
     }
     cout << endl;
   }
-#endif
+  #endif
 
   // add test edges to graphs
   cout << "Streaming in " << num_test_edges << " test edges:" << endl;
@@ -479,9 +464,9 @@ int main(int argc, char *argv[]) {
     }
   }
   // write iterations and cluster map
-  string score_iteration_filename = "/data/anomaly_score_iterations_" + dataset +"_attack" + to_string(num_attack_graph) + ".txt";
-  string cluster_iteration_filename = "/data/cluster_map_iterations_" + dataset +"_attack" + to_string(num_attack_graph) + ".txt";
-  string updated_graph_iterations_filename = "/data/updated_graph_iterations_" + dataset +"_attack" + to_string(num_attack_graph) + ".txt";
+  string score_iteration_filename = "/data/anomaly_score_iterations_" + dataset +"_noise" + to_string(num_noise) + ".txt";
+  string cluster_iteration_filename = "/data/cluster_map_iterations_" + dataset +"_noise" + to_string(num_noise) + ".txt";
+  string updated_graph_iterations_filename = "/data/updated_graph_iterations_" + dataset +"_noise" + to_string(num_noise) + ".txt";
   write_anomaly_iterations_to_file(score_iteration_filename, anomaly_score_iterations);
   write_cluster_iterations_to_file(cluster_iteration_filename, cluster_map_iterations);
   write_cluster_iterations_to_file(updated_graph_iterations_filename, updated_graph_iterations);
@@ -563,7 +548,7 @@ int main(int argc, char *argv[]) {
     cout << endl;
   }
 #endif
-// }
+
   /*cout << "Constructing shingle vectors:" << endl;
   start = chrono::steady_clock::now();
   construct_shingle_vectors(shingle_vectors, shingle_id, graphs,
