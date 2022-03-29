@@ -290,7 +290,7 @@ int main(int argc, char *argv[]) {
 
     // skip first 50 attach graphs. Fix test graphs and use the first 50 for noise
     if (i >=300 && i <= 349){
-      cout << "Skip Attack gid " << i << ", due to fixed 50 attack graphs" << endl; 
+      cout << "Skip Attack gid " << i << ", due to fixed 50 attack graphs" << endl;
       continue;
     }
 
@@ -390,7 +390,7 @@ int main(int argc, char *argv[]) {
       cout << "\tStreaming graph " << gid << " offset " << off << endl;
 #endif
       // update graph in current iteration
-      updated_graph_iterations[edge_num/CLUSTER_UPDATE_INTERVAL][gid] = 1;
+      updated_graph_iterations[edge_num/CLUSTER_UPDATE_INTERVAL][gid]++;
 
       auto& e = test_edges[gid][off];
 
