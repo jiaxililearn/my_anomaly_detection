@@ -363,6 +363,7 @@ int main(int argc, char *argv[]) {
   deque<edge> cache;
 
   uint32_t edge_num = 0;
+  uint32_t attck_num_iteration = 0;
   for (auto& group : groups) {
 
 #ifdef DEBUG
@@ -385,6 +386,15 @@ int main(int argc, char *argv[]) {
       uint32_t gidx = rand_group_idx(prng);
       uint32_t gid = group_copy[gidx];
       uint32_t off = edge_offset[gid];
+
+      if (gid >=300 && gid <= 399){
+        attck_num_iteration++;
+      }
+
+      if (attck_num_iteration > 1076) {
+        cout << "\tSkip attack graph " << gid << " at offset " << off << endl;
+        continue;
+      }
 
 #ifdef DEBUG
       cout << "\tStreaming graph " << gid << " offset " << off << endl;
@@ -444,6 +454,7 @@ int main(int argc, char *argv[]) {
 
         // output streaming anomaly scores and cluster map
         cout << "streaming evaluation at edge number " << edge_num << endl;
+        attck_num_iteration = 0;
       }
 
       edge_num++;
