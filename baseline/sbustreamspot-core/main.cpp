@@ -398,7 +398,7 @@ int main(int argc, char *argv[]) {
       uint32_t gid = group_copy[gidx];
       uint32_t off = edge_offset[gid];
       if (num_test_attack != 0){
-        if (edge_num % (CLUSTER_UPDATE_INTERVAL/((1076 * num_test_attack)/50)) == 0){
+        if (edge_num % (CLUSTER_UPDATE_INTERVAL/((1076 * num_test_attack)/50) + 1) == 0){
           gid = atk_gid_idx;
           off = edge_offset[gid];
           cout << "adding edge from attack graph " << gid << " at offset " << off << endl;
