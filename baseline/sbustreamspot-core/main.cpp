@@ -389,12 +389,14 @@ int main(int argc, char *argv[]) {
 
       if (gid >=300 && gid <= 399){
         attck_num_iteration++;
+
+        if (attck_num_iteration > (1076 * num_test_attack)/50 + 1) {
+          cout << "\tSkip attack graph " << gid << " at offset " << off << endl;
+          continue;
+        }
       }
 
-      if (attck_num_iteration > 1076) {
-        cout << "\tSkip attack graph " << gid << " at offset " << off << endl;
-        continue;
-      }
+
 
 #ifdef DEBUG
       cout << "\tStreaming graph " << gid << " offset " << off << endl;
