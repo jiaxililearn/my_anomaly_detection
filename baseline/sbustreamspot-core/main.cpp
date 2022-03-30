@@ -388,12 +388,14 @@ int main(int argc, char *argv[]) {
       uint32_t off = edge_offset[gid];
 
       if (gid >=300 && gid <= 399){
-        attck_num_iteration++;
 
         if (attck_num_iteration > (1076 * num_test_attack)/50 + 1) {
           cout << "\tSkip attack graph " << gid << " at offset " << off << endl;
           continue;
         }
+
+        attck_num_iteration++;
+
       }
 
 
