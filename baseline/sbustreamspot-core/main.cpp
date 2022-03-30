@@ -378,7 +378,7 @@ int main(int argc, char *argv[]) {
 #endif
 
     unordered_map<uint32_t,uint32_t> edge_offset;
-    unordered_map<uint32_t,uint32_t> atk_edge_offset;
+    // unordered_map<uint32_t,uint32_t> atk_edge_offset;
     for (auto &g : group)
       edge_offset[g] = 0;
 
@@ -400,7 +400,7 @@ int main(int argc, char *argv[]) {
 
       if (edge_num % CLUSTER_UPDATE_INTERVAL/((1076 * num_test_attack)/50 + 1) == 0){
         gid = atk_gid_idx;
-        off = atk_edge_offset[gid];
+        off = edge_offset[gid];
         cout << "adding edge from attack graph " << gid << " at offset " << off << endl;
       }
 
