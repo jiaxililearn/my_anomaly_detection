@@ -318,6 +318,10 @@ int main(int argc, char *argv[]) {
     }
 
     for (uint32_t j = 0; j < end_limit; j++) {
+      // ADDED: skip attack graph in groups
+      if (test_gids[i + j] >= 300 && test_gids[i + j] <=399){
+        continue;
+      }
       group.push_back(test_gids[i + j]);
     }
 
@@ -363,7 +367,7 @@ int main(int argc, char *argv[]) {
   deque<edge> cache;
 
   uint32_t edge_num = 0;
-  uint32_t attck_num_iteration = 0;
+  // uint32_t attck_num_iteration = 0;
   for (auto& group : groups) {
 
 #ifdef DEBUG
@@ -374,8 +378,15 @@ int main(int argc, char *argv[]) {
 #endif
 
     unordered_map<uint32_t,uint32_t> edge_offset;
+    unordered_map<uint32_t,uint32_t> atk_edge_offset;
     for (auto &g : group)
       edge_offset[g] = 0;
+
+    // ADDED: init attack graphs offset separately
+    for (uint32_t i = 350; i<400; i++)
+      edge_offset[i] = 0;
+    uint32_t atk_gid_idx = 350;
+
 
     vector<uint32_t> group_copy(group);
     while (group_copy.size() > 0) {
@@ -387,16 +398,22 @@ int main(int argc, char *argv[]) {
       uint32_t gid = group_copy[gidx];
       uint32_t off = edge_offset[gid];
 
-      if (gid >=300 && gid <= 399){
-
-        if (attck_num_iteration > (1076 * num_test_attack)/50 + 1) {
-          cout << "\tSkip attack graph " << gid << " at offset " << off << endl;
-          continue;
-        }
-
-        attck_num_iteration++;
-
+      if (edge_num % CLUSTER_UPDATE_INTERVAL/((1076 * num_test_attack)/50 + 1) == 0){
+        gid = atk_gid_idx;
+        off = atk_edge_offset[gid];
+        cout << "adding edge from attack graph " << gid << " at offset " << off << endl;
       }
+
+      // if (gid >=300 && gid <= 399){
+      //
+      //   if (attck_num_iteration > ) {
+      //     cout << "\tSkip attack graph " << gid << " at offset " << off << endl;
+      //     continue;
+      //   }
+      //
+      //   attck_num_iteration++;
+      //
+      // }
 
 
 
@@ -458,7 +475,7 @@ int main(int argc, char *argv[]) {
 
         // output streaming anomaly scores and cluster map
         cout << "streaming evaluation at edge number " << edge_num << endl;
-        attck_num_iteration = 0;
+        // attck_num_iteration = 0;
       }
 
       edge_num++;
@@ -480,16 +497,21 @@ int main(int argc, char *argv[]) {
 #endif
 
       edge_offset[gid]++; // increment next edge offset
-      if (edge_offset[gid] == test_edges[gid].size()) {
-        // out of edges for this gid
-        group_copy.erase(group_copy.begin() + gidx);
+      if (edge_offset[gid] >= test_edges[gid].size()) {
+
+        if (gid >=300 && gid <=399){
+          atk_gid_idx++;
+        } else {
+          // out of edges for this gid
+          group_copy.erase(group_copy.begin() + gidx);
 #ifdef DEBUG
-        cout << "Erasing graph " << group[gidx] << endl;
-        cout << "New group: ";
-        for (auto& g : group_copy)
-          cout << g << " ";
-        cout << endl;
+          cout << "Erasing graph " << group[gidx] << endl;
+          cout << "New group: ";
+          for (auto& g : group_copy)
+            cout << g << " ";
+          cout << endl;
 #endif
+        }
       }
     }
   }
